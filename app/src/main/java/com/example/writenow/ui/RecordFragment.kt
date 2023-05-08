@@ -1,5 +1,6 @@
 package com.example.writenow.ui
 
+import android.app.Activity
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.media.AudioFormat
@@ -30,16 +31,8 @@ class RecordFragment: BaseFragment<FragmentRecordBinding>(R.layout.fragment_reco
     private lateinit var audioData: ByteArray
     private var readBytes by Delegates.notNull<Int>()
 
-    override fun initDataBinding() {
-        super.initDataBinding()
-    }
-
     override fun initAfterBinding() {
         super.initAfterBinding()
-
-//        binding.tvTurnCmd.setOnClickListener {
-//            navController.navigate(R.id.action_textFragment_to_cmdFragment)
-//        }
 
         // 버튼 누를시 녹음 시작, 빨간 배경으로 변경
         binding.btnRecord.setOnClickListener {
@@ -64,9 +57,28 @@ class RecordFragment: BaseFragment<FragmentRecordBinding>(R.layout.fragment_reco
                     binding.tvInfoStartRecord.visibility = View.INVISIBLE
                 }
 
-                startRecord()
+                // 권한 부여 여부
+                val isEmpower = ContextCompat.checkSelfPermission(requireContext(),
+                    android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(requireContext(),
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+
+                // 권한 부여 되지 않았을경우
+                if (isEmpower) {
+                    empowerRecordAudioAndWriteReadStorage()
+                    // 권한 부여 되었을 경우
+                } else {
+                    startRecord()
+                }
             }
         }
+    }
+
+    // 레코딩, 파일 읽기 쓰기 권한부여
+    private fun empowerRecordAudioAndWriteReadStorage(){
+        val permissions = arrayOf(android.Manifest.permission.RECORD_AUDIO,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            android.Manifest.permission.READ_EXTERNAL_STORAGE)
+        ActivityCompat.requestPermissions(context as Activity, permissions,0)
     }
 
     private fun startRecord() {
@@ -76,38 +88,42 @@ class RecordFragment: BaseFragment<FragmentRecordBinding>(R.layout.fragment_reco
         val channelConfig = AudioFormat.CHANNEL_IN_MONO
         val audioFormat = AudioFormat.ENCODING_PCM_16BIT
         val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
+        Log.d("bufferr",bufferSize.toString())
+
         if (context?.let { ContextCompat.checkSelfPermission(it, android.Manifest.permission.RECORD_AUDIO) }
             == PackageManager.PERMISSION_GRANTED) {
             // 권한이 이미 부여되어 있습니다.
             // 여기서 API를 호출합니다.
+            audioRecord = AudioRecord(audioSource, sampleRate, channelConfig, audioFormat, bufferSize)
+
+            // 녹음 시작
+            audioData = ByteArray(bufferSize)
+            audioRecord.startRecording()
         } else {
             // 권한이 부여되어 있지 않습니다. 권한 요청 대화상자를 표시하여 권한을 요청합니다.
             activity?.let {
                 ActivityCompat.requestPermissions(
-                    it,
+                    requireActivity(),
                     arrayOf(android.Manifest.permission.RECORD_AUDIO),
                     REQUEST_RECORD_AUDIO_PERMISSION
                 )
             }
         }
-        audioRecord = AudioRecord(audioSource, sampleRate, channelConfig, audioFormat, bufferSize)
 
-        // 녹음 시작
-        audioData = ByteArray(bufferSize)
-        audioRecord.startRecording()
-        readBytes = audioRecord.read(audioData, 0, bufferSize)
     }
 
     private fun completeRecord(){
-
         // 녹음 종료
         audioRecord.stop()
         audioRecord.release()
 
         // 녹음된 데이터 반환
+        readBytes = audioRecord.read(audioData, 0, audioData.size)
+
+        // 녹음된 데이터 반환
         // val result = audioData.copyOfRange(0, readBytes)
-        val result = byteArrayToRecordModel(audioData, readBytes)
-        Log.d("resultt","apiManager: ${apiManager}, 녹음 완료")
+        //val result = byteArrayToRecordModel(audioData, readBytes)
+        Log.d("resultt","apiManager: ${readBytes}, ${audioData}, 녹음 완료")
         //apiManager?.getData(result)
         //apiManager?.getTest()
         apiManager?.postTest()
