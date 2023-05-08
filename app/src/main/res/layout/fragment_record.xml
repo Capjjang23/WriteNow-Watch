@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/mainBlack"
+        app:layout_boxedEdges="all">
+
+        <ImageButton
+            android:id="@+id/btn_record"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_marginTop="40dp"
+            android:background="@drawable/oval_button"
+            android:backgroundTint="@color/mainYellow"
+            android:contentDescription="녹음 시작 버튼"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/mic_off" />
+
+        <TextView
+            android:id="@+id/tv_info_start_record"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="17dp"
+            android:fontFamily="@font/gmarketsans_medium"
+            android:lineHeight="20sp"
+            android:text="@string/text_on"
+            android:textAlignment="center"
+            android:textColor="@color/mainYellow"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_record" />
+
+        <TextView
+            android:id="@+id/tv_resulting_record"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="17dp"
+            android:text="testst"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:visibility="invisible"
+            app:layout_constraintEnd_toEndOf="@+id/btn_record"
+            app:layout_constraintStart_toStartOf="@+id/btn_record"
+            app:layout_constraintTop_toBottomOf="@+id/btn_record" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</layout>

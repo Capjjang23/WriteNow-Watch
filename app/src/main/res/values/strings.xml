@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">WriteNow</string>
+    <!--
+    This string is used for square devices and overridden by hello_world in
+    values-round/strings.xml for round devices.
+    -->
+    <string name="hello_world">Hello Square World!</string>
+    <string name="text_on">버튼을 눌러\n음성 인식을 시작합니다.</string>
+    <string name="text_off">녹음 버튼을 누르면 음향 신호 음식이 중지됩니다.</string>
+    <string name="cmd_on">녹음 버튼을 누르면 음향 신호 인식을 시작합니다.</string>
+    <string name="cmd_off">녹음 버튼을 누르면 음향 신호 음식이 중지되며 명령어가 실행됩니다.</string>
+
+    <string name="turn_cmd">명령어 입력\n화면으로 전환</string>
+    <string name="turn_text">텍스트 입력\n화면으로 전환</string>
+
+    <!-- dialog_action_cmd -->
+    <string name="info_cmd">%s 명령어를\n실행하시겠습니까?</string>
+
+    <!-- dialog_action_text -->
+    <string name="copy_text">텍스트 복사하기</string>
+    <string name="send_msg">메세지로 보내기</string>
+
+    <string name="copied">복사되었습니다.</string>
+
+    <string name="sos">01040377619</string>
+</resources>

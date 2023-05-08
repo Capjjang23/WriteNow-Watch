@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/mainBlack">
+
+        <ImageButton
+            android:id="@+id/btn_esc"
+            android:layout_width="47dp"
+            android:layout_height="47dp"
+            android:layout_marginTop="7dp"
+            android:background="@color/transparent"
+            android:contentDescription="닫기 버튼"
+            android:scaleType="fitEnd"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/btn_esc" />
+
+        <ImageView
+            android:id="@+id/imageView2"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btn_esc"
+            app:srcCompat="@drawable/show_text" />
+
+        <TextView
+            android:id="@+id/tv_result_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/manrope_variable_wght"
+            android:text="TextView"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            app:layout_constraintBottom_toBottomOf="@+id/imageView2"
+            app:layout_constraintEnd_toEndOf="@+id/imageView2"
+            app:layout_constraintStart_toStartOf="@+id/imageView2"
+            app:layout_constraintTop_toTopOf="@+id/imageView2" />
+
+        <Button
+            android:id="@+id/btn_copy_text"
+            android:layout_width="140dp"
+            android:layout_height="35dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/rectangle_shadow"
+            android:fontFamily="@font/gmarketsans_medium"
+            android:text="@string/copy_text"
+            android:textColor="@color/mainYellow"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="@+id/imageView2"
+            app:layout_constraintStart_toStartOf="@+id/imageView2"
+            app:layout_constraintTop_toBottomOf="@+id/imageView2" />
+
+        <Button
+            android:id="@+id/btn_send_text"
+            android:layout_width="140dp"
+            android:layout_height="35dp"
+            android:layout_marginTop="7dp"
+            android:background="@drawable/rectangle_shadow"
+            android:fontFamily="@font/gmarketsans_medium"
+            android:text="@string/send_msg"
+            android:textColor="@color/mainYellow"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toEndOf="@+id/btn_copy_text"
+            app:layout_constraintStart_toStartOf="@+id/btn_copy_text"
+            app:layout_constraintTop_toBottomOf="@+id/btn_copy_text" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</layout>
