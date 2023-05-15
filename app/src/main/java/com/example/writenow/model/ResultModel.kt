@@ -1,5 +1,5 @@
 package com.example.writenow.model
 
 data class ResultModel (
-    var key: String = ""
+    val predicted_alphabet:String
 )

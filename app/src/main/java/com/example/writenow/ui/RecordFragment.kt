@@ -3,75 +3,109 @@ package com.example.writenow.ui
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaPlayer
 import android.media.MediaRecorder
+import android.os.Build
 import android.os.Environment
 import android.util.Log
 import android.view.View
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.setFragmentResult
 import com.example.writenow.R
+import com.example.writenow.apiManager.RecordApiManager
 import com.example.writenow.base.BaseFragment
 import com.example.writenow.databinding.FragmentRecordBinding
-import com.example.writenow.model.byteArrayToRecordModel
-import com.example.writenow.apiManager.RecordApiManager
-import java.io.FileOutputStream
+import com.example.writenow.databinding.FragmentRecordTestBinding
+import com.example.writenow.model.RecordModel
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileInputStream
+
+import java.io.IOException
+import java.time.LocalDateTime
 import java.util.*
-import kotlin.properties.Delegates
 
-class RecordFragment: BaseFragment<FragmentRecordBinding>(R.layout.fragment_record) {
-    private val REQUEST_RECORD_AUDIO_PERMISSION = 100
-    private var record_state:Boolean = false
-    val apiManager = RecordApiManager.getInstance(context)
-    private lateinit var audioRecord: AudioRecord
-    private lateinit var audioData: ByteArray
-    private var readBytes by Delegates.notNull<Int>()
+class RecordFragment : BaseFragment<FragmentRecordBinding>(R.layout.fragment_record) {
+    private var mediaRecorder: MediaRecorder? = null
+    private var isRecording:Boolean = false
+    private var fileName = ""
+    private var filePath = ""
+    private val apiManager = RecordApiManager.getInstance(context)
 
-    override fun initAfterBinding() {
-        super.initAfterBinding()
+    override fun initStartView() {
+        super.initStartView()
 
-        // 버튼 누를시 녹음 시작, 빨간 배경으로 변경
+        apiManager?._resultLivedata?.postValue("")
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    override fun initDataBinding() {
+        super.initDataBinding()
+
+        apiManager?.resultLivedata?.observe(viewLifecycleOwner) {
+            binding.tvResultingRecord.text = it
+            startRecording()
+        }
+
+        // 녹음 시작 버튼
         binding.btnRecord.setOnClickListener {
             // 녹음 진행중이었을시 fragment 전환
-            if (record_state) {
-                completeRecord()
-                setFragmentResult("recordResult", bundleOf("result" to binding.tvResultingRecord.text))
+            if (isRecording) {
+                isRecording = false
+                stopRecording()
+                setFragmentResult(
+                    "recordResult",
+                    bundleOf("result" to binding.tvResultingRecord.text)
+                )
                 navController.navigate(R.id.action_recordFragment_to_showResultFragment)
             } else {
-                record_state=!record_state
+                isRecording = true
 
-                binding.btnRecord.backgroundTintList = when (record_state) {
-                    false -> ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.mainYellow))
-                    true -> ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.mainRed))
+                binding.btnRecord.backgroundTintList = when (isRecording) {
+                    false -> ColorStateList.valueOf(
+                        ContextCompat.getColor(
+                            requireContext(),
+                            R.color.mainYellow
+                        )
+                    )
+                    true -> ColorStateList.valueOf(
+                        ContextCompat.getColor(
+                            requireContext(),
+                            R.color.mainRed
+                        )
+                    )
                 }
 
-                if (record_state){
+                if (isRecording) {
                     binding.tvResultingRecord.visibility = View.VISIBLE
                     binding.tvInfoStartRecord.visibility = View.INVISIBLE
-                } else{
+                } else {
                     binding.tvResultingRecord.visibility = View.VISIBLE
                     binding.tvInfoStartRecord.visibility = View.INVISIBLE
                 }
 
                 // 권한 부여 여부
-                val isEmpower = ContextCompat.checkSelfPermission(requireContext(),
-                    android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(requireContext(),
-                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                val isEmpower = ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    android.Manifest.permission.RECORD_AUDIO
+                ) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ) != PackageManager.PERMISSION_GRANTED
 
                 // 권한 부여 되지 않았을경우
                 if (isEmpower) {
                     empowerRecordAudioAndWriteReadStorage()
                     // 권한 부여 되었을 경우
                 } else {
-                    startRecord()
+                    startRecording()
                 }
             }
         }
     }
+
 
     // 레코딩, 파일 읽기 쓰기 권한부여
     private fun empowerRecordAudioAndWriteReadStorage(){
@@ -81,82 +115,93 @@ class RecordFragment: BaseFragment<FragmentRecordBinding>(R.layout.fragment_reco
         ActivityCompat.requestPermissions(context as Activity, permissions,0)
     }
 
-    private fun startRecord() {
-        // 오디오 포맷 설정
-        val audioSource = MediaRecorder.AudioSource.MIC
-        val sampleRate = 44100
-        val channelConfig = AudioFormat.CHANNEL_IN_MONO
-        val audioFormat = AudioFormat.ENCODING_PCM_16BIT
-        val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
-        Log.d("bufferr",bufferSize.toString())
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun startRecording() {
+        //fileName = Date().time.toString()+".aac"
+        fileName = "temp.acc"
+        filePath = Environment.getExternalStorageDirectory().absolutePath + "/Download/" + fileName
 
-        if (context?.let { ContextCompat.checkSelfPermission(it, android.Manifest.permission.RECORD_AUDIO) }
-            == PackageManager.PERMISSION_GRANTED) {
-            // 권한이 이미 부여되어 있습니다.
-            // 여기서 API를 호출합니다.
-            audioRecord = AudioRecord(audioSource, sampleRate, channelConfig, audioFormat, bufferSize)
+        mediaRecorder = MediaRecorder().apply {
+            setAudioSource(MediaRecorder.AudioSource.MIC)
+            setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS) // or MediaRecorder.OutputFormat.MPEG_4
+            setOutputFile(filePath)
+            setAudioEncoder(MediaRecorder.AudioEncoder.AAC) // or MediaRecorder.AudioEncoder.DEFAULT
+            setAudioSamplingRate(22050) // set the desired sampling rate
+            setAudioEncodingBitRate(320000)
+            setMaxDuration(1500) // Set the maximum duration to 1.5 seconds
 
-            // 녹음 시작
-            audioData = ByteArray(bufferSize)
-            audioRecord.startRecording()
-        } else {
-            // 권한이 부여되어 있지 않습니다. 권한 요청 대화상자를 표시하여 권한을 요청합니다.
-            activity?.let {
-                ActivityCompat.requestPermissions(
-                    requireActivity(),
-                    arrayOf(android.Manifest.permission.RECORD_AUDIO),
-                    REQUEST_RECORD_AUDIO_PERMISSION
-                )
+            setOnInfoListener { _, what, _ ->
+                if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
+                    mediaRecorder?.apply {
+                        stop()
+                        release()
+                    }
+                    mediaRecorder = null
+
+                    // 서버 전송
+                    val previous = LocalDateTime.now()
+                    val byteArray = mediaRecorderToByteArray(fileName)
+                    val recordModel = byteArray?.let { RecordModel(it) }
+                    if (recordModel != null) {
+                        apiManager?.getData(recordModel, previous)
+                        Log.d("sendFile", "MediaRecorder: $mediaRecorder, 이름: $fileName")
+                    }
+                }
+            }
+
+            try {
+                prepare()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+            start()
+            fileName = filePath
+        }
+    }
+
+    private fun stopRecording(){
+        mediaRecorder?.apply {
+            stop()
+            release()
+        }
+        mediaRecorder = null
+
+//        mediaRecorder?.apply {
+//            stop()
+//            release()
+//        }
+//        mediaRecorder = null
+//
+//        // 서버 전송
+//        val previous = LocalDateTime.now()
+//        val byteArray = mediaRecorderToByteArray(fileName)
+//        val recordModel = byteArray?.let { RecordModel(it) }
+//        if (recordModel != null) {
+//            apiManager?.getData(recordModel, previous)
+//            Log.d("sendFile", "이름: $fileName, 경로: $filePath")
+//        }
+    }
+
+    private fun mediaRecorderToByteArray(outputFile: String): ByteArray? {
+        val file = File(outputFile)
+        if (!file.exists()) {
+            return null
+        }
+
+        val inputStream = FileInputStream(file)
+        val buffer = ByteArrayOutputStream()
+
+        inputStream.use { input ->
+            buffer.use { output ->
+                val data = ByteArray(1024)
+                var count: Int
+                while (input.read(data).also { count = it } != -1) {
+                    output.write(data, 0, count)
+                }
+                output.flush()
             }
         }
-
-    }
-
-    private fun completeRecord(){
-        // 녹음 종료
-        audioRecord.stop()
-        audioRecord.release()
-
-        // 녹음된 데이터 반환
-        readBytes = audioRecord.read(audioData, 0, audioData.size)
-
-        // 녹음된 데이터 반환
-        // val result = audioData.copyOfRange(0, readBytes)
-        //val result = byteArrayToRecordModel(audioData, readBytes)
-        Log.d("resultt","apiManager: ${readBytes}, ${audioData}, 녹음 완료")
-        //apiManager?.getData(result)
-        //apiManager?.getTest()
-        apiManager?.postTest()
-
-        //saveAudioDataToFile(audioData)
-    }
-
-    private fun saveAudioDataToFile(data: ByteArray) {
-        // 저장할 파일 경로 지정
-        val filename: String = Date().time.toString()+".wav"
-        // ${context?.filesDir?.absolutePath}/audio_file.wav
-        val filePath = "${context?.filesDir?.absolutePath}/" + filename
-
-        Log.d("filePathh",filePath.toString())
-
-        // FileOutputStream을 사용하여 파일에 데이터를 저장
-        FileOutputStream(filePath).use { outStream ->
-            outStream.write(data)
-        }
-
-        playAudioFile(filePath)
-    }
-
-    private fun playAudioFile(filePath: String) {
-        val mediaPlayer = MediaPlayer()
-        mediaPlayer.setDataSource(filePath)
-        mediaPlayer.setOnPreparedListener {
-            mediaPlayer.start()
-        }
-        mediaPlayer.setOnErrorListener { mp, what, extra ->
-            Log.e("MediaPlayer", "Error occurred: what = $what, extra = $extra")
-            false // 이벤트가 처리되었는지 여부를 반환합니다.
-        }
-        mediaPlayer.prepareAsync()
+        return buffer.toByteArray()
     }
 }
+    

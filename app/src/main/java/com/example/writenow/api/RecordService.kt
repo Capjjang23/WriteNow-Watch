@@ -11,8 +11,8 @@ interface RecordService {
     fun getTest(): Call<TestGetModel>
 
     @POST("/posts")
-    fun postTest(@Body postData: TestModel): Call<PostTestModel>
+    fun postTest(@Body postData: RecordModel): Call<PostTestModel>
 
-    @POST("/process_audio")
+    @POST("/process_audio/")
     fun postRecord(@Body recordData: RecordModel): Call<ResultModel>
 }
